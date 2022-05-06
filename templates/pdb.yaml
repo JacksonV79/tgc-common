@@ -1,0 +1,12 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "tgc-common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tgc-common.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "tgc-common.selectorLabels" . | nindent 6 }}

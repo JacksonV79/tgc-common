@@ -5,18 +5,18 @@ metadata:
   labels:
     {{- include "tgc-common.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+{{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
+{{- end }}
   selector:
     matchLabels:
       {{- include "tgc-common.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+    {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+    {{- end }}
       labels:
         {{- include "tgc-common.selectorLabels" . | nindent 8 }}
     spec:
@@ -28,25 +28,50 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ include "tgc-common.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: {{ include "tgc-common.fullname" . | upper }}_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tgc-common.fullname" . }}-secrets 
+                  key: api_key
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            {{- toYaml .Values.additionalEnv | nindent 12 }}
           ports:
-            - name: http
-              containerPort: 80
+            - name: grpc
+              containerPort: {{ .Values.service.port.grpc }}
               protocol: TCP
+            - name: http
+              containerPort: {{ .Values.service.port.http }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.service.port.metrics }}
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /go/bin/{{ include "tgc-common.fullname" . }}/config.yml
+              name: appconfig
+              subPath: config.yml
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: appconfig
+          configMap:
+            name: {{ include "tgc-common.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

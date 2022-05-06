@@ -60,3 +60,25 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Service Host and Path Matching for Private route
+*/}}
+{{- define "tgc-common.ingressRouteMatchPrivate" -}}
+{{- printf "Host(`%s`) && PathPrefix(`%s`)" .Values.ingressRoute.privateHost .Values.ingressRoute.route | quote -}}
+{{- end }}
+
+{{/*
+Service Host and Path Matching for Private route
+*/}}
+{{- define "tgc-common.ingressRouteMatchPublicInternal" -}}
+{{- printf "Host(`%s`) && PathPrefix(`%s`)" .Values.ingressRoute.publicInternalHost .Values.ingressRoute.route | quote -}}
+{{- end }}
+
+{{/*
+Linkerd Destination Override Header
+$service_name.$namespace.svc.cluster.local:$service_port
+*/}}
+{{- define "tgc-common.l5dDstOverrideHeader" -}}
+{{- printf "%s.%s.svc.cluster.local:%v" (include "tgc-common.fullname" . ) (.Release.Namespace) .Values.service.port.http -}}
+{{- end }}

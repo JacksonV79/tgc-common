@@ -1,0 +1,38 @@
+{{- $fullName := include "tgc-common.fullname" . -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-middleware-chain
+  namespace: {{ .Release.Namespace }}
+spec:
+  chain:
+    middlewares:
+    - name: https-only
+    - name: {{ $fullName }}-l5d-middleware
+    - name: {{ $fullName }}-strip-prefix-middleware
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-l5d-middleware
+  namespace: {{ .Release.Namespace }}
+spec:
+  headers:
+    customRequestHeaders:
+      l5d-dst-override: {{ include "tgc-common.l5dDstOverrideHeader" . }}
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullName }}-strip-prefix-middleware
+  namespace: {{ .Release.Namespace }}
+spec:
+    # we strip service name from req URL
+    # /tgc-common/api/v1/{resource}
+    # becomes /api/v1/{resource}
+  stripPrefix:
+    prefixes:
+      - {{ .Values.ingressRoute.route }}
+    forceSlash: true

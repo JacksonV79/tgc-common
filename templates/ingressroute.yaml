@@ -1,0 +1,37 @@
+{{- if .Values.ingressRoute.enabled -}}
+{{- $fullName := include "tgc-common.fullname" . -}}
+{{- $httpPort := .Values.service.port.http -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $fullName }}-internal
+  labels:
+    {{- include "tgc-common.labels" . | nindent 4 }}
+  annotations:
+      kubernetes.io/ingress.class: traefik-internal
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: {{ include "tgc-common.ingressRouteMatchPrivate" . }}
+      kind: Rule
+      priority: 1
+      middlewares:
+        - name: {{ $fullName }}-l5d-middleware
+        - name: {{ $fullName }}-strip-prefix-middleware
+      services:
+        - kind: Service
+          name: {{ $fullName }}
+          port: {{ $httpPort }}
+    - match: {{ include "tgc-common.ingressRouteMatchPublicInternal" . }}
+      kind: Rule
+      priority: 2
+      middlewares:
+        - name: {{ $fullName }}-l5d-middleware
+        - name: {{ $fullName }}-strip-prefix-middleware
+      services:
+        - kind: Service
+          name: {{ $fullName }}
+          port: {{ $httpPort }}
+{{- end }}
