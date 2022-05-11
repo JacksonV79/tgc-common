@@ -34,38 +34,33 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: {{ include "tgc-common.fullname" . | upper }}_API_KEY
+            - name: "{{ include "tgc-common.fullname" . | upper }}{{- .Values.envNameExtension | upper }}"
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "tgc-common.fullname" . }}-secrets 
-                  key: api_key
+                  name: "{{ include "tgc-common.fullname" . }}{{ .Values.secretKeyRef.nameExtension }}"
+                  key: {{ .Values.secretKeyRef.keyType }}
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            {{- toYaml .Values.additionalEnv | nindent 12 }}
           ports:
-            - name: grpc
-              containerPort: {{ .Values.service.port.grpc }}
+          {{- range .Values.service.ports }}
+            - name: {{- .Values.service.port.name }}
+              containerPort: {{- .Values.service.port.containerPort }}
               protocol: TCP
-            - name: http
-              containerPort: {{ .Values.service.port.http }}
-              protocol: TCP
-            - name: metrics
-              containerPort: {{ .Values.service.port.metrics }}
-              protocol: TCP
+          {{- end }}
           volumeMounts:
             - mountPath: /go/bin/{{ include "tgc-common.fullname" . }}/config.yml
-              name: appconfig
+              name: appconfig 
               subPath: config.yml
           livenessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: {{ .Values.livenessProbe.portType }}
           readinessProbe:
             httpGet:
-              path: /healthz
-              port: http
+              path: {{ .Values.readinessProbe.path }}
+              port: {{ .Values.readinessProbe.portType }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:

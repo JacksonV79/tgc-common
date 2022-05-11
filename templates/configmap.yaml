@@ -6,5 +6,4 @@ metadata:
     {{- include "tgc-common.labels" . | nindent 4 }}
 data:
   config.yml:
-    # {{ .Values.appconfig | toJson }} if you need to use JSON format instead
     {{ .Values.appconfig | toYaml | quote }}  

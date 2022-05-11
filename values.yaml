@@ -30,13 +30,37 @@ serviceAccount:
 service:
   type: ClusterIP
   port:
-    grpc: 7071
-    http: 8081
-    metrics: 9091
+    - name: grpc
+      containerPort: 7071
+    - name: http
+      containerPort: 8081
+    - name: metrics
+      containerPort: 9091
 
 ingressRoute:
   enabled: true
   route: /service/helloworld/
+  ingress1:
+    nameExtension: -internal
+    class: traefik-internal
+    priority: "1"
+  ingress2:
+    nameExtension:
+    class: traefik 
+    priority: "2"
+
+envNameExtension: -DB-PASSWORD 
+
+secretKeyRef:
+  nameExtension: -db-pass
+  keyType: password
+
+livenessProbe:
+  portType: api
+
+readinessProbe:
+  path: /readyz
+  portType: api
 
 resources: {}
 

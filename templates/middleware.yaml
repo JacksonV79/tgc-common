@@ -1,4 +1,5 @@
 {{- $fullName := include "tgc-common.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
@@ -29,9 +30,6 @@ metadata:
   name: {{ $fullName }}-strip-prefix-middleware
   namespace: {{ .Release.Namespace }}
 spec:
-    # we strip service name from req URL
-    # /tgc-common/api/v1/{resource}
-    # becomes /api/v1/{resource}
   stripPrefix:
     prefixes:
       - {{ .Values.ingressRoute.route }}

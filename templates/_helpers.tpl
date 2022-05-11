@@ -62,6 +62,13 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Service Host and Path Matching
+*/}}
+{{- define "tgc-common.ingressRouteMatch" -}}
+{{- printf "Host(`%s`) && PathPrefix(`%s`)" .Values.ingressRoute.host .Values.ingressRoute.route | quote -}}
+{{- end }}
+
+{{/*
 Service Host and Path Matching for Private route
 */}}
 {{- define "tgc-common.ingressRouteMatchPrivate" -}}

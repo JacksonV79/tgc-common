@@ -1,22 +1,51 @@
 {{- if .Values.ingressRoute.enabled -}}
 {{- $fullName := include "tgc-common.fullname" . -}}
-{{- $httpPort := .Values.service.port.http -}}
+{{- $svcPort := .Values.service.ports -}}
+{{- $httpPort := .Values.service.ports -}}
+{{- if .Values.ingressRoute.ingress1 -}}
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ $fullName }}-internal
+  name: "{{ $fullName }}:-:{{ .Values.ingressRoute.ingress1.nameExtension }}"
   labels:
     {{- include "tgc-common.labels" . | nindent 4 }}
   annotations:
-      kubernetes.io/ingress.class: traefik-internal
+      kubernetes.io/ingress.class: {{ .Values.ingressRoute.ingress1.class }}
+spec:
+  {{- if .Values.ingressRoute.tls }}
+  tls:
+      secretName: {{ .Values.ingressRoute.tls.secretName }}
+  {{- end }}
+  entryPoints:
+    - websecure # allow https only
+  routes:
+    - match: {{ include "tgc-common.ingressRouteMatch" . }}
+      kind: Rule
+      priority: {{ .Values.ingressRoute.ingress1.priority }}
+      middlewares:
+        - name: {{ $fullName }}-middleware-chain
+      services:
+        - kind: Service
+          name: {{ $fullName }}
+          port: {{ $svcPort }}
+{{- end }}
+---
+{{- if .Values.ingressRoute.ingress2 -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: "{{ $fullName }}:-:{{ .Values.ingressRoute.ingress2.nameExtension }}"
+  labels:
+    {{- include "tgc-common.labels" . | nindent 4 }}
+  annotations:
+      kubernetes.io/ingress.class: {{ .Values.ingressRoute.ingress2.class }}
 spec:
   entryPoints:
     - web
-    - websecure
   routes:
     - match: {{ include "tgc-common.ingressRouteMatchPrivate" . }}
       kind: Rule
-      priority: 1
+      priority: {{ .Values.ingressRoute.ingress2.priority }}
       middlewares:
         - name: {{ $fullName }}-l5d-middleware
         - name: {{ $fullName }}-strip-prefix-middleware
@@ -24,14 +53,5 @@ spec:
         - kind: Service
           name: {{ $fullName }}
           port: {{ $httpPort }}
-    - match: {{ include "tgc-common.ingressRouteMatchPublicInternal" . }}
-      kind: Rule
-      priority: 2
-      middlewares:
-        - name: {{ $fullName }}-l5d-middleware
-        - name: {{ $fullName }}-strip-prefix-middleware
-      services:
-        - kind: Service
-          name: {{ $fullName }}
-          port: {{ $httpPort }}
+{{- end }}
 {{- end }}

@@ -7,17 +7,10 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port.grpc }}
-      targetPort: grpc
+  {{- range .Values.service.ports}}
+    - name: {{ .Values.service.port.name }}
+      containerPort: {{ .Values.service.port.containerPort }}
       protocol: TCP
-      name: grpc
-    - port: {{ .Values.service.port.http }}
-      targetPort: http
-      protocol: TCP
-      name: http
-    - port: {{ .Values.service.port.metrics }}
-      targetPort: metrics
-      protocol: TCP
-      name: metrics
+  {{- end }}
   selector:
     {{- include "tgc-common.selectorLabels" . | nindent 4 }}
